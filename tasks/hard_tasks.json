@@ -1,0 +1,158 @@
+[
+  {
+    "task_id": "hard_001",
+    "difficulty": "hard",
+    "query": "SELECT * FROM users WHERE email = '${user_email}' AND password = '${password}';",
+    "schema": {
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "email": "VARCHAR(255) UNIQUE",
+        "password_hash": "VARCHAR(255)",
+        "role": "VARCHAR(32)",
+        "created_at": "TIMESTAMP"
+      }
+    },
+    "context": "Authenticate a user during login.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_001_sql_injection",
+        "category": "security",
+        "description": "Interpolating user_email and password directly into the SQL creates a SQL injection vulnerability.",
+        "severity": 1.0,
+        "fix": "SELECT id, email, role FROM users WHERE email = ? AND password_hash = ?;",
+        "keywords": ["sql injection", "interpolation", "user input", "parameterized", "security"]
+      },
+      {
+        "id": "hard_001_select_star_sensitive",
+        "category": "security",
+        "description": "SELECT * returns sensitive columns such as password hashes that the login flow does not need.",
+        "severity": 0.4,
+        "fix": "SELECT id, email, role FROM users WHERE email = ? AND password_hash = ?;",
+        "keywords": ["select *", "sensitive columns", "password hash", "least privilege", "security"]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "hard_002",
+    "difficulty": "hard",
+    "query": "SELECT id, email FROM customers UNION SELECT id, secret_value FROM admin_secrets;",
+    "schema": {
+      "customers": {
+        "id": "INT PRIMARY KEY",
+        "email": "VARCHAR(255)"
+      },
+      "admin_secrets": {
+        "id": "INT PRIMARY KEY",
+        "secret_value": "TEXT"
+      }
+    },
+    "context": "Prepare a data export for a customer marketing campaign.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_002_secret_exfiltration",
+        "category": "security",
+        "description": "The UNION includes admin_secrets and leaks privileged data into a customer-facing export.",
+        "severity": 0.95,
+        "fix": "SELECT id, email FROM customers;",
+        "keywords": ["union", "admin_secrets", "secret_value", "data leakage", "security"]
+      },
+      {
+        "id": "hard_002_mixed_data_domains",
+        "category": "logic",
+        "description": "The query mixes unrelated datasets with incompatible semantics, producing an invalid export.",
+        "severity": 0.45,
+        "fix": "SELECT id, email FROM customers;",
+        "keywords": ["union", "invalid export", "mixed dataset", "logic"]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "hard_003",
+    "difficulty": "hard",
+    "query": "SELECT c.id, c.full_name, c.ssn, c.email, t.subject FROM customers c JOIN support_tickets t ON t.customer_id = c.id WHERE t.status = 'open';",
+    "schema": {
+      "customers": {
+        "id": "INT PRIMARY KEY",
+        "full_name": "VARCHAR(255)",
+        "ssn": "VARCHAR(32)",
+        "email": "VARCHAR(255)"
+      },
+      "support_tickets": {
+        "id": "INT PRIMARY KEY",
+        "customer_id": "INT INDEX",
+        "subject": "VARCHAR(255)",
+        "status": "VARCHAR(32)"
+      }
+    },
+    "context": "Show open support tickets to an agent dashboard.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_003_pii_leak",
+        "category": "security",
+        "description": "The dashboard query exposes SSNs even though the ticket workflow only needs identity and ticket context.",
+        "severity": 0.9,
+        "fix": "SELECT c.id, c.full_name, c.email, t.subject FROM customers c JOIN support_tickets t ON t.customer_id = c.id WHERE t.status = 'open';",
+        "keywords": ["ssn", "pii", "sensitive data", "least privilege", "security"]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "hard_004",
+    "difficulty": "hard",
+    "query": "SELECT e1.department_id, e1.id, COUNT(e2.salary) + 1 AS salary_rank FROM employees e1 LEFT JOIN employees e2 ON e1.department_id = e2.department_id AND e2.salary > e1.salary GROUP BY e1.department_id, e1.id;",
+    "schema": {
+      "employees": {
+        "id": "INT PRIMARY KEY",
+        "department_id": "INT INDEX",
+        "salary": "DECIMAL(10,2)"
+      }
+    },
+    "context": "Rank employees by salary within each department.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_004_self_join_ranking",
+        "category": "performance",
+        "description": "The self-join ranking pattern is expensive and should use a window function such as DENSE_RANK().",
+        "severity": 0.8,
+        "fix": "SELECT department_id, id, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS salary_rank FROM employees;",
+        "keywords": ["self join", "window function", "dense_rank", "ranking", "performance"]
+      }
+    ],
+    "max_steps": 7
+  },
+  {
+    "task_id": "hard_005",
+    "difficulty": "hard",
+    "query": "UPDATE accounts SET balance = balance - 100 WHERE user_id = 10; UPDATE accounts SET balance = balance + 100 WHERE user_id = 11;",
+    "schema": {
+      "accounts": {
+        "user_id": "INT PRIMARY KEY",
+        "balance": "DECIMAL(10,2)"
+      }
+    },
+    "context": "Transfer money between two account balances.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_005_missing_transaction",
+        "category": "security",
+        "description": "The transfer uses two updates without a transaction, so a partial failure can corrupt balances.",
+        "severity": 0.9,
+        "fix": "BEGIN; UPDATE accounts SET balance = balance - 100 WHERE user_id = 10 AND balance >= 100; UPDATE accounts SET balance = balance + 100 WHERE user_id = 11; COMMIT;",
+        "keywords": ["transaction", "partial failure", "atomic", "commit", "security"]
+      },
+      {
+        "id": "hard_005_no_balance_guard",
+        "category": "logic",
+        "description": "The debit statement does not verify sufficient funds before subtracting the balance.",
+        "severity": 0.55,
+        "fix": "BEGIN; UPDATE accounts SET balance = balance - 100 WHERE user_id = 10 AND balance >= 100; UPDATE accounts SET balance = balance + 100 WHERE user_id = 11; COMMIT;",
+        "keywords": ["balance guard", "insufficient funds", "where balance >=", "logic"]
+      }
+    ],
+    "max_steps": 7
+  }
+]
+

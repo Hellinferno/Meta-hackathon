@@ -1,0 +1,23 @@
+name: sql-query-reviewer
+description: "AI agent reviews SQL queries for correctness, performance, and security."
+author: Hellinferno
+version: "0.1.0"
+tags:
+  - openenv
+  - sql
+  - code-review
+  - security
+tasks:
+  - id: easy_syntax
+    name: Syntax Error Detection
+    difficulty: easy
+    description: Find obvious SQL syntax and logic defects.
+  - id: medium_performance
+    name: Performance Anti-Pattern Review
+    difficulty: medium
+    description: Identify schema-aware performance problems.
+  - id: hard_security
+    name: Security and Optimization Audit
+    difficulty: hard
+    description: Detect injection, data exposure, and advanced optimization issues.
+

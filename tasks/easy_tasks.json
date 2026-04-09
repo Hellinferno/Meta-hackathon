@@ -1,0 +1,148 @@
+[
+  {
+    "task_id": "easy_001",
+    "difficulty": "easy",
+    "query": "SELCT * FORM users WEHRE id = 1;",
+    "schema": {
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)",
+        "email": "VARCHAR(255)"
+      }
+    },
+    "context": "Fetch a user profile by id for the account page.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_001_select",
+        "category": "syntax",
+        "description": "SELCT should be SELECT.",
+        "severity": 0.35,
+        "fix": "SELECT * FROM users WHERE id = 1;",
+        "keywords": ["selct", "select", "misspelled keyword", "syntax"]
+      },
+      {
+        "id": "easy_001_from",
+        "category": "syntax",
+        "description": "FORM should be FROM.",
+        "severity": 0.35,
+        "fix": "SELECT * FROM users WHERE id = 1;",
+        "keywords": ["form", "from", "misspelled keyword", "syntax"]
+      },
+      {
+        "id": "easy_001_where",
+        "category": "syntax",
+        "description": "WEHRE should be WHERE.",
+        "severity": 0.25,
+        "fix": "SELECT * FROM users WHERE id = 1;",
+        "keywords": ["wehre", "where", "misspelled keyword", "syntax"]
+      },
+      {
+        "id": "easy_001_projection",
+        "category": "performance",
+        "description": "SELECT * fetches unnecessary columns for a profile lookup.",
+        "severity": 0.15,
+        "fix": "SELECT id, name, email FROM users WHERE id = 1;",
+        "keywords": ["select *", "unnecessary columns", "projection", "performance"]
+      }
+    ],
+    "max_steps": 5
+  },
+  {
+    "task_id": "easy_002",
+    "difficulty": "easy",
+    "query": "SELECT id, email users WHERE active = 1;",
+    "schema": {
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "email": "VARCHAR(255)",
+        "active": "BOOLEAN"
+      }
+    },
+    "context": "List active user emails for a notification job.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_002_missing_from",
+        "category": "syntax",
+        "description": "The query is missing the FROM clause before users.",
+        "severity": 0.6,
+        "fix": "SELECT id, email FROM users WHERE active = 1;",
+        "keywords": ["missing from", "from clause", "syntax", "users"]
+      }
+    ],
+    "max_steps": 4
+  },
+  {
+    "task_id": "easy_003",
+    "difficulty": "easy",
+    "query": "SELECT order_id, total FROM orders WHERE shipped_at = NULL;",
+    "schema": {
+      "orders": {
+        "order_id": "INT PRIMARY KEY",
+        "total": "DECIMAL(10,2)",
+        "shipped_at": "TIMESTAMP NULL"
+      }
+    },
+    "context": "Find orders that still need to ship.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_003_null_check",
+        "category": "logic",
+        "description": "NULL must be compared with IS NULL instead of = NULL.",
+        "severity": 0.7,
+        "fix": "SELECT order_id, total FROM orders WHERE shipped_at IS NULL;",
+        "keywords": ["is null", "= null", "null comparison", "logic"]
+      }
+    ],
+    "max_steps": 4
+  },
+  {
+    "task_id": "easy_004",
+    "difficulty": "easy",
+    "query": "SELECT name FROM customers WHERE city = 'Boston;",
+    "schema": {
+      "customers": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)",
+        "city": "VARCHAR(128)"
+      }
+    },
+    "context": "Filter customers who live in Boston.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_004_unclosed_quote",
+        "category": "syntax",
+        "description": "The string literal is not terminated with a closing quote.",
+        "severity": 0.75,
+        "fix": "SELECT name FROM customers WHERE city = 'Boston';",
+        "keywords": ["unclosed quote", "unterminated string", "syntax", "quote"]
+      }
+    ],
+    "max_steps": 4
+  },
+  {
+    "task_id": "easy_005",
+    "difficulty": "easy",
+    "query": "SELECT id, statuz FROM orders WHERE status = 'paid';",
+    "schema": {
+      "orders": {
+        "id": "INT PRIMARY KEY",
+        "status": "VARCHAR(32)",
+        "total": "DECIMAL(10,2)",
+        "created_at": "TIMESTAMP"
+      }
+    },
+    "context": "List paid orders for revenue accounting.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_005_bad_column",
+        "category": "logic",
+        "description": "Column statuz does not exist; the intended column is status.",
+        "severity": 0.65,
+        "fix": "SELECT id, status FROM orders WHERE status = 'paid';",
+        "keywords": ["unknown column", "statuz", "status", "column name"]
+      }
+    ],
+    "max_steps": 4
+  }
+]
+

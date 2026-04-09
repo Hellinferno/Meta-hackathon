@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .[dev]
+
+      - name: Run unit and integration tests
+        run: pytest
+
+      - name: Build Docker image
+        run: docker build -t sql-query-reviewer .
+
+      - name: Attempt OpenEnv validation
+        run: |
+          python -m pip install "git+https://github.com/meta-pytorch/OpenEnv.git" || true
+          if command -v openenv >/dev/null 2>&1; then
+            openenv validate
+          else
+            echo "OpenEnv CLI unavailable; skipping openenv validate"
+          fi
+

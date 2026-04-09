@@ -1,0 +1,152 @@
+[
+  {
+    "task_id": "medium_001",
+    "difficulty": "medium",
+    "query": "SELECT * FROM events ORDER BY created_at DESC;",
+    "schema": {
+      "events": {
+        "id": "BIGINT PRIMARY KEY",
+        "event_name": "VARCHAR(255)",
+        "payload": "JSON",
+        "created_at": "TIMESTAMP INDEX",
+        "actor_id": "BIGINT",
+        "metadata": "JSON"
+      }
+    },
+    "context": "Show the most recent events on an admin dashboard.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_001_select_star",
+        "category": "performance",
+        "description": "SELECT * pulls a wide payload when the dashboard only needs a few columns.",
+        "severity": 0.3,
+        "fix": "SELECT id, event_name, created_at FROM events ORDER BY created_at DESC LIMIT 50;",
+        "keywords": ["select *", "wide table", "projection", "performance"]
+      },
+      {
+        "id": "medium_001_missing_limit",
+        "category": "performance",
+        "description": "The dashboard query is missing a LIMIT and can scan far more rows than necessary.",
+        "severity": 0.3,
+        "fix": "SELECT id, event_name, created_at FROM events ORDER BY created_at DESC LIMIT 50;",
+        "keywords": ["limit", "unbounded query", "dashboard", "performance"]
+      }
+    ],
+    "max_steps": 5
+  },
+  {
+    "task_id": "medium_002",
+    "difficulty": "medium",
+    "query": "SELECT c.id, c.name, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count FROM customers c;",
+    "schema": {
+      "customers": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)"
+      },
+      "orders": {
+        "id": "INT PRIMARY KEY",
+        "customer_id": "INT INDEX",
+        "total": "DECIMAL(10,2)"
+      }
+    },
+    "context": "Show each customer with the number of orders they have placed.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_002_correlated_subquery",
+        "category": "performance",
+        "description": "The correlated subquery re-counts orders per row and should be rewritten as a join with GROUP BY.",
+        "severity": 0.6,
+        "fix": "SELECT c.id, c.name, COUNT(o.id) AS order_count FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name;",
+        "keywords": ["correlated subquery", "group by", "join", "count", "performance"]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "medium_003",
+    "difficulty": "medium",
+    "query": "SELECT DISTINCT email FROM users WHERE email IS NOT NULL;",
+    "schema": {
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "email": "VARCHAR(255) UNIQUE",
+        "last_login_at": "TIMESTAMP NULL"
+      }
+    },
+    "context": "Export non-null user emails for a CRM sync.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_003_redundant_distinct",
+        "category": "performance",
+        "description": "DISTINCT is redundant because users.email is already unique.",
+        "severity": 0.45,
+        "fix": "SELECT email FROM users WHERE email IS NOT NULL;",
+        "keywords": ["distinct", "unique", "redundant", "email", "performance"]
+      }
+    ],
+    "max_steps": 5
+  },
+  {
+    "task_id": "medium_004",
+    "difficulty": "medium",
+    "query": "SELECT o.id, o.total, u.name FROM orders o JOIN users u ON u.id = o.user_id WHERE DATE(o.created_at) = '2026-04-10';",
+    "schema": {
+      "orders": {
+        "id": "INT PRIMARY KEY",
+        "user_id": "INT INDEX",
+        "created_at": "TIMESTAMP INDEX",
+        "total": "DECIMAL(10,2)"
+      },
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)"
+      }
+    },
+    "context": "List orders placed on a specific date with the user name attached.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_004_function_on_indexed_column",
+        "category": "performance",
+        "description": "Wrapping created_at with DATE() prevents efficient use of the created_at index.",
+        "severity": 0.6,
+        "fix": "SELECT o.id, o.total, u.name FROM orders o JOIN users u ON u.id = o.user_id WHERE o.created_at >= '2026-04-10' AND o.created_at < '2026-04-11';",
+        "keywords": ["date()", "function on column", "index", "range predicate", "performance"]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "medium_005",
+    "difficulty": "medium",
+    "query": "SELECT id, name FROM products WHERE LOWER(name) LIKE '%pro%';",
+    "schema": {
+      "products": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255) INDEX",
+        "category_id": "INT",
+        "price": "DECIMAL(10,2)"
+      }
+    },
+    "context": "Search products whose names contain the text pro.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_005_lower_blocks_index",
+        "category": "performance",
+        "description": "Applying LOWER(name) on every row prevents the index on name from being used efficiently.",
+        "severity": 0.35,
+        "fix": "SELECT id, name FROM products WHERE name ILIKE 'pro%';",
+        "keywords": ["lower", "function on column", "index", "performance"]
+      },
+      {
+        "id": "medium_005_leading_wildcard",
+        "category": "performance",
+        "description": "The leading wildcard in LIKE '%pro%' forces a full scan instead of an index-friendly prefix lookup.",
+        "severity": 0.35,
+        "fix": "SELECT id, name FROM products WHERE name ILIKE 'pro%';",
+        "keywords": ["leading wildcard", "%pro%", "full scan", "prefix lookup", "performance"]
+      }
+    ],
+    "max_steps": 6
+  }
+]
+

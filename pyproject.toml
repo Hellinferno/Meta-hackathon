@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sql-query-reviewer"
+version = "0.1.0"
+description = "An OpenEnv-style SQL review environment for correctness, performance, and security auditing."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Hellinferno" }
+]
+dependencies = [
+  "fastapi>=0.115,<1.0",
+  "httpx>=0.27,<1.0",
+  "openenv-core>=0.2.0",
+  "openai>=2.7.2,<3.0",
+  "pydantic>=2.8,<3.0",
+  "uvicorn>=0.30,<1.0",
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["sql_query_reviewer*"]
+
+[tool.fastapi]
+entrypoint = "server.app:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

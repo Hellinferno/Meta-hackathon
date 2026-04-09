@@ -1,0 +1,36 @@
+name: Sync To Hugging Face
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  sync-to-space:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push repository to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HF_TOKEN:-}" ]; then
+            echo "HF_TOKEN is not configured; skipping Hugging Face sync."
+            exit 0
+          fi
+
+          space_id="${HF_SPACE_ID:-${GITHUB_REPOSITORY_OWNER}/sql-query-reviewer}"
+
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          git remote add hf "https://oauth2:${HF_TOKEN}@huggingface.co/spaces/${space_id}"
+          git push --force hf HEAD:main
