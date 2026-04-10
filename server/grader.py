@@ -79,7 +79,7 @@ def grade_episode(
     false_positive_count: int,
 ) -> float:
     if not ground_truth_issues:
-        return 1.0 if false_positive_count == 0 else clamp(1.0 - (0.1 * false_positive_count), 0.0, 1.0)
+        return 0.99 if false_positive_count == 0 else clamp(1.0 - (0.1 * false_positive_count), 0.01, 0.99)
 
     total_severity = sum(issue.severity for issue in ground_truth_issues)
     found_severity = sum(issue.severity for issue in ground_truth_issues if issue.id in found_issue_ids)
@@ -87,5 +87,5 @@ def grade_episode(
     efficiency_bonus = max(0.0, 0.1 * (1 - (total_steps / max(max_steps, 1))))
     false_positive_penalty = 0.05 * false_positive_count
     final_score = coverage_score + efficiency_bonus - false_positive_penalty
-    return clamp(final_score, 0.0, 1.0)
+    return clamp(final_score, 0.01, 0.99)
 

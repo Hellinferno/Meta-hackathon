@@ -85,7 +85,7 @@ class SQLReviewState(StrictModel):
     approved: bool = False
     fixes_suggested: list[str] = Field(default_factory=list)
     false_positive_count: int = Field(default=0, ge=0)
-    final_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    final_score: float | None = Field(default=None, gt=0.0, lt=1.0)
 
 
 class StepResult(StrictModel):

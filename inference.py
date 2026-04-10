@@ -207,7 +207,7 @@ async def run_episode_async(
         except Exception:
             score = sum(rewards) / max(len(rewards), 1) if rewards else 0.0
 
-        score = max(0.0, min(1.0, score))
+        score = max(0.01, min(0.99, score))
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as exc:
@@ -283,7 +283,7 @@ def run_episode_sync(
         except Exception:
             score = sum(rewards) / max(len(rewards), 1) if rewards else 0.0
 
-        score = max(0.0, min(1.0, score))
+        score = max(0.01, min(0.99, score))
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as exc:
@@ -305,7 +305,7 @@ async def async_main() -> int:
         print("[DEBUG] WARNING: No API key found (HF_TOKEN / API_KEY / OPENAI_API_KEY)", flush=True)
         for tid in ["easy_001", "medium_001", "hard_001"]:
             log_start(task=tid, env=BENCHMARK, model=MODEL_NAME)
-            log_end(success=False, steps=0, score=0.0, rewards=[])
+            log_end(success=False, steps=0, score=0.01, rewards=[])
         return 1
 
     llm_client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
@@ -380,7 +380,7 @@ async def async_main() -> int:
         print("[DEBUG] All connection methods exhausted", flush=True)
         for task_id in task_ids:
             log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
-            log_end(success=False, steps=0, score=0.0, rewards=[])
+            log_end(success=False, steps=0, score=0.01, rewards=[])
         return 1
 
     except Exception as exc:
