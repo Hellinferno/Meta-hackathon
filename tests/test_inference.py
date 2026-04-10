@@ -72,11 +72,13 @@ def test_run_episode_emits_start_step_end_logs(capsys) -> None:
         def __init__(self) -> None:
             self.chat = SimpleNamespace(completions=DummyCompletions())
 
-    summary = inference.run_episode(DummyEnv(), DummyClient(), "dummy-model", "easy_999")
+    inference.run_episode(DummyEnv(), DummyClient(), "dummy-model", "easy_999")
     captured = capsys.readouterr().out
 
     assert "[START]" in captured
+    assert "task=easy_999" in captured
     assert "[STEP]" in captured
     assert "[END]" in captured
-    assert summary["final_score"] == 1.0
+    assert "success=true" in captured
+    assert "score=1.00" in captured
 
