@@ -77,7 +77,7 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
         f"[END] success={str(success).lower()} steps={steps} "
-        f"score={score:.3f} rewards={rewards_str}",
+        f"score={score:.2f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -221,6 +221,14 @@ async def run_episode_async(
 # ---------------------------------------------------------------------------
 # Episode runner (sync) — for direct HTTP connection
 # ---------------------------------------------------------------------------
+
+
+def run_episode(env: Any, llm_client: Any, model_name: str, task_id: str) -> None:
+    """Public episode runner expected by tests.
+
+    Uses the synchronous env interface: reset(task_id=...), step(...), state().
+    """
+    return run_episode_sync(env, llm_client, model_name, task_id)
 
 
 def run_episode_sync(

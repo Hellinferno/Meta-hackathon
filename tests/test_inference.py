@@ -55,7 +55,7 @@ def test_run_episode_emits_start_step_end_logs(capsys) -> None:
                 total_reward=0.2,
                 done=True,
                 approved=True,
-                final_score=1.0,
+                final_score=0.99,
             )
 
     class DummyCompletions:
@@ -80,5 +80,5 @@ def test_run_episode_emits_start_step_end_logs(capsys) -> None:
     assert "[STEP]" in captured
     assert "[END]" in captured
     assert "success=true" in captured
-    assert "score=1.00" in captured
+    assert "score=0.99" in captured
 
