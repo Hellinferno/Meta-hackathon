@@ -91,3 +91,20 @@ def test_identify_then_approve_can_finish_successfully() -> None:
     assert payload["reward"] > 0
     assert payload["info"]["final_score"] is not None
 
+
+def test_request_more_context_returns_context_shared_flag() -> None:
+    client = build_client()
+    client.post("/reset", json={"task_id": "easy_001"})
+
+    response = client.post(
+        "/step",
+        json={"action_type": "request_more_context", "confidence": 0.7},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["reward"] == 0.0
+    assert "context_shared" in payload["info"]
+    assert payload["info"]["context_shared"] is True
+    assert payload["done"] is False
+

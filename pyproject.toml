@@ -30,7 +30,10 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["sql_query_reviewer*"]
+include = ["sql_query_reviewer*", "server*"]
+
+[tool.setuptools]
+py-modules = ["client", "inference", "models"]
 
 [tool.fastapi]
 entrypoint = "server.app:app"

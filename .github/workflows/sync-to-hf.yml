@@ -28,7 +28,8 @@ jobs:
             exit 0
           fi
 
-          space_id="${HF_SPACE_ID:-${GITHUB_REPOSITORY_OWNER}/sql-query-reviewer}"
+          owner_slug="$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          space_id="${HF_SPACE_ID:-${owner_slug}/sql-query-reviewer}"
 
           git config user.email "actions@github.com"
           git config user.name "github-actions[bot]"
