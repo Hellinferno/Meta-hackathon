@@ -114,7 +114,7 @@ class SQLReviewEnvironment:
 
         else:
             feedback = self._schema_feedback(task)
-            info = {"context_shared": bool(task.schema)}
+            info = {"context_shared": bool(task.schema_info)}
 
         state.total_reward += reward
 

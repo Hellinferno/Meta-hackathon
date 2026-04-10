@@ -126,6 +126,15 @@ This repo is Space-ready because:
 - the repo includes a root `Dockerfile`
 - the API listens on port `8000`
 
+Recommended setup:
+1. Create a new Space at `https://huggingface.co/new-space`
+2. Set owner to your Hugging Face namespace, name to `sql-query-reviewer`, and SDK to `Docker`
+3. In GitHub, add repository secret `HF_TOKEN` with a Hugging Face token that can write to Spaces
+4. In GitHub, add repository variable `HF_SPACE_ID` with the exact repo id, for example `hellinferno/sql-query-reviewer`
+5. Push to `main` or run the `Sync To Hugging Face` workflow manually from the Actions tab
+
+Using `HF_SPACE_ID` is the safest option because your Hugging Face namespace may not match your GitHub owner name exactly.
+
 To deploy manually from a local machine with git:
 
 ```bash
@@ -151,7 +160,7 @@ The Hugging Face sync workflow expects:
 If `HF_SPACE_ID` is not set, the workflow defaults to:
 
 ```text
-<github-repository-owner>/sql-query-reviewer
+<lowercased-github-repository-owner>/sql-query-reviewer
 ```
 
 ## Usage Example
