@@ -103,7 +103,7 @@ def test_request_more_context_returns_context_shared_flag() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["reward"] == 0.0
+    assert payload["reward"] == -0.03
     assert "context_shared" in payload["info"]
     assert payload["info"]["context_shared"] is True
     assert payload["done"] is False

@@ -15,7 +15,26 @@ An OpenEnv environment where an AI agent reviews SQL queries for correctness, pe
 
 ## Why This Matters
 
-SQL bugs are among the most common and costly defects in production systems. A misplaced keyword breaks an API, a missing index degrades latency by 100x, and an unsanitized input opens a door to data exfiltration. Today these defects are caught by human reviewers who spend hours on repetitive pattern matching. This environment provides a standardized benchmark to train and evaluate AI agents that can automate this critical workflow — directly useful for developer tools, IDE integrations, and automated code review systems.
+SQL bugs are among the most common and costly defects in production systems. A misplaced
+keyword breaks an API. A missing WHERE clause on a DELETE wipes a table. An unparameterized
+input opens a path to data exfiltration. A function call on an indexed column turns a
+10ms query into a 30-second full table scan.
+
+Today, these defects are caught by human reviewers who spend hours on repetitive pattern
+matching during code reviews, migration audits, and ETL pipeline checks. This creates a
+bottleneck — senior engineers are pulled from feature work to review SQL, and critical
+issues still slip through.
+
+This environment provides a standardized benchmark to train and evaluate AI agents on
+exactly this task. Unlike toy benchmarks, every query reflects real patterns found in
+production codebases — from typos that break APIs to injection vectors that expose user
+data to race conditions that enable double-spending. The agent must identify issues,
+suggest fixes, and know when to approve — just like a human code reviewer.
+
+The environment provides rich per-step reward signals with severity-weighted partial
+credit, making it directly suitable for GRPO and PPO training loops. The task bank spans
+three difficulty levels with meaningful score variance, ensuring the benchmark
+discriminates between agent capabilities.
 
 ## What The Environment Does
 
@@ -38,23 +57,36 @@ The agent responds step by step with one of four actions:
 
 Rewards are deterministic and shaped for partial progress throughout the trajectory:
 
-- **Correct issue identification**: +0.10 to +0.35 scaled by issue severity
+- **Correct issue identification**: +0.10 to +0.45 scaled by issue severity, confidence, and discovery order
 - **Valid fix suggestion**: +0.08 to +0.10 bonus
 - **Confidence bonus**: up to +0.05 for high-confidence correct identifications
+- **Discovery order bonus**: +0.04 for first issue found, diminishing for subsequent finds
 - **False positive**: −0.10 penalty
 - **Duplicate identification**: −0.02 penalty
 - **Approving with missed issues**: −0.15 per missed issue
 - **Complete correct approval**: +0.20
+- **Request context when schema available**: −0.03 penalty (encourages using provided schema)
+
+### Reward Properties for RL Training
+
+- **Dense**: Every step returns a non-zero signal, enabling credit assignment
+- **Bounded**: Per-step rewards in [-1.0, +0.45], episode scores in (0, 1)
+- **Shaped**: Partial credit for partial coverage — no cliff between "found 2 of 3" and "found 3 of 3"
+- **Deterministic**: Same actions always produce the same rewards (no randomness in grading)
+- **Discriminative**: Hard tasks require multi-step reasoning; easy tasks reward quick identification
 
 ## Task Bank
 
-The environment ships with **15 tasks** across three difficulty levels:
+The environment ships with **20 tasks** across three difficulty levels:
 
-| Difficulty | Count | Examples | Expected Baseline Score |
+| Difficulty | Count | Examples | Score Range |
 |---|---|---|---|
-| Easy | 5 | Misspelled keywords, missing FROM, = NULL vs IS NULL | ~0.75–0.90 |
-| Medium | 5 | SELECT *, missing indexes, correlated subqueries, unbounded queries | ~0.40–0.60 |
-| Hard | 5 | SQL injection, privilege escalation, PII leakage, self-join optimization | ~0.20–0.40 |
+| Easy | 7 | Misspelled keywords, missing FROM, = NULL vs IS NULL, DELETE without WHERE, self-comparison | ~0.60–0.90 |
+| Medium | 7 | SELECT *, missing LIMIT, correlated subqueries, function on indexed column, ORDER BY RAND() | ~0.30–0.65 |
+| Hard | 6 | SQL injection, privilege escalation, PII leakage, self-join optimization, race conditions | ~0.15–0.45 |
+
+Each ground truth issue includes 8-12 keywords and synonyms for robust fuzzy matching, plus
+bigram matching to catch common two-word phrases LLMs use (e.g., "sql injection", "missing where").
 
 Task data: `tasks/easy_tasks.json`, `tasks/medium_tasks.json`, `tasks/hard_tasks.json`
 
@@ -88,10 +120,10 @@ Task data: `tasks/easy_tasks.json`, `tasks/medium_tasks.json`, `tasks/hard_tasks
 ├── sql_query_reviewer/   ← typed models and client package
 ├── server/               ← FastAPI environment server
 │   ├── environment.py    ← reset(), step(), state()
-│   ├── grader.py         ← deterministic scoring
-│   ├── reward.py         ← per-step reward computation
+│   ├── grader.py         ← deterministic scoring with bigram matching
+│   ├── reward.py         ← per-step reward with order bonus
 │   └── app.py            ← HTTP routes
-├── tasks/                ← 15 SQL query tasks (JSON)
+├── tasks/                ← 20 SQL query tasks (JSON)
 └── tests/                ← pytest suite
 ```
 
@@ -128,7 +160,7 @@ export HF_TOKEN=hf_xxx
 python inference.py
 ```
 
-The script emits structured `[START]`, `[STEP]`, `[END]` logs per the OpenEnv spec.
+The script runs all 20 tasks and emits structured `[START]`, `[STEP]`, `[END]` logs per the OpenEnv spec.
 
 ## Hugging Face Spaces
 

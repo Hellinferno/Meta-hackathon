@@ -20,7 +20,11 @@
         "description": "Interpolating user_email and password directly into the SQL creates a SQL injection vulnerability.",
         "severity": 1.0,
         "fix": "SELECT id, email, role FROM users WHERE email = ? AND password_hash = ?;",
-        "keywords": ["sql injection", "interpolation", "user input", "parameterized", "security"]
+        "keywords": [
+          "sql injection", "interpolation", "user input", "parameterized", "security",
+          "string concatenation", "prepared statement", "bind parameter",
+          "unsanitized", "injection attack", "escape", "placeholder"
+        ]
       },
       {
         "id": "hard_001_select_star_sensitive",
@@ -28,7 +32,11 @@
         "description": "SELECT * returns sensitive columns such as password hashes that the login flow does not need.",
         "severity": 0.4,
         "fix": "SELECT id, email, role FROM users WHERE email = ? AND password_hash = ?;",
-        "keywords": ["select *", "sensitive columns", "password hash", "least privilege", "security"]
+        "keywords": [
+          "select *", "sensitive columns", "password hash", "least privilege", "security",
+          "over-exposure", "data leakage", "unnecessary columns",
+          "password", "credential", "star query"
+        ]
       }
     ],
     "max_steps": 6
@@ -55,7 +63,11 @@
         "description": "The UNION includes admin_secrets and leaks privileged data into a customer-facing export.",
         "severity": 0.95,
         "fix": "SELECT id, email FROM customers;",
-        "keywords": ["union", "admin_secrets", "secret_value", "data leakage", "security"]
+        "keywords": [
+          "union", "admin_secrets", "secret_value", "data leakage", "security",
+          "exfiltration", "privileged data", "unauthorized access",
+          "sensitive data", "data exposure", "information disclosure"
+        ]
       },
       {
         "id": "hard_002_mixed_data_domains",
@@ -63,7 +75,11 @@
         "description": "The query mixes unrelated datasets with incompatible semantics, producing an invalid export.",
         "severity": 0.45,
         "fix": "SELECT id, email FROM customers;",
-        "keywords": ["union", "invalid export", "mixed dataset", "logic"]
+        "keywords": [
+          "union", "invalid export", "mixed dataset", "logic", "incompatible",
+          "different tables", "semantic mismatch", "unrelated data",
+          "data integrity", "domain mixing"
+        ]
       }
     ],
     "max_steps": 6
@@ -94,7 +110,12 @@
         "description": "The dashboard query exposes SSNs even though the ticket workflow only needs identity and ticket context.",
         "severity": 0.9,
         "fix": "SELECT c.id, c.full_name, c.email, t.subject FROM customers c JOIN support_tickets t ON t.customer_id = c.id WHERE t.status = 'open';",
-        "keywords": ["ssn", "pii", "sensitive data", "least privilege", "security"]
+        "keywords": [
+          "ssn", "pii", "sensitive data", "least privilege", "security",
+          "social security", "personally identifiable", "data exposure",
+          "unnecessary column", "information leakage", "over-fetching",
+          "personal data"
+        ]
       }
     ],
     "max_steps": 6
@@ -118,7 +139,11 @@
         "description": "The self-join ranking pattern is expensive and should use a window function such as DENSE_RANK().",
         "severity": 0.8,
         "fix": "SELECT department_id, id, DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC) AS salary_rank FROM employees;",
-        "keywords": ["self join", "window function", "dense_rank", "ranking", "performance"]
+        "keywords": [
+          "self join", "window function", "dense_rank", "ranking", "performance",
+          "self-join", "rank", "partition by", "over clause", "analytic function",
+          "quadratic", "n squared"
+        ]
       }
     ],
     "max_steps": 7
@@ -141,7 +166,11 @@
         "description": "The transfer uses two updates without a transaction, so a partial failure can corrupt balances.",
         "severity": 0.9,
         "fix": "BEGIN; UPDATE accounts SET balance = balance - 100 WHERE user_id = 10 AND balance >= 100; UPDATE accounts SET balance = balance + 100 WHERE user_id = 11; COMMIT;",
-        "keywords": ["transaction", "partial failure", "atomic", "commit", "security"]
+        "keywords": [
+          "transaction", "partial failure", "atomic", "commit", "security",
+          "begin", "rollback", "atomicity", "acid", "consistency",
+          "two updates", "no transaction", "data corruption"
+        ]
       },
       {
         "id": "hard_005_no_balance_guard",
@@ -149,10 +178,40 @@
         "description": "The debit statement does not verify sufficient funds before subtracting the balance.",
         "severity": 0.55,
         "fix": "BEGIN; UPDATE accounts SET balance = balance - 100 WHERE user_id = 10 AND balance >= 100; UPDATE accounts SET balance = balance + 100 WHERE user_id = 11; COMMIT;",
-        "keywords": ["balance guard", "insufficient funds", "where balance >=", "logic"]
+        "keywords": [
+          "balance guard", "insufficient funds", "where balance >=", "logic",
+          "negative balance", "overdraft", "check balance", "guard clause",
+          "minimum balance", "validation"
+        ]
+      }
+    ],
+    "max_steps": 7
+  },
+  {
+    "task_id": "hard_006",
+    "difficulty": "hard",
+    "query": "UPDATE accounts SET balance = balance - 500 WHERE user_id = 42 AND balance >= 500;",
+    "schema": {
+      "accounts": {
+        "user_id": "INT PRIMARY KEY",
+        "balance": "DECIMAL(12,2)"
+      }
+    },
+    "context": "Deduct $500 from user account for a withdrawal. Multiple withdrawal requests may arrive concurrently.",
+    "ground_truth_issues": [
+      {
+        "id": "hard_006_race_condition",
+        "category": "security",
+        "description": "Without SELECT FOR UPDATE or proper transaction isolation, concurrent requests can pass the balance check simultaneously, allowing double-spending.",
+        "severity": 0.9,
+        "fix": "BEGIN; SELECT balance FROM accounts WHERE user_id = 42 FOR UPDATE; UPDATE accounts SET balance = balance - 500 WHERE user_id = 42 AND balance >= 500; COMMIT;",
+        "keywords": [
+          "race condition", "concurrent", "double spend", "for update",
+          "transaction", "isolation", "lock", "toctou", "time of check",
+          "atomicity", "concurrent requests", "locking", "serializable"
+        ]
       }
     ],
     "max_steps": 7
   }
 ]
-

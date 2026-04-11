@@ -18,7 +18,11 @@
         "description": "SELCT should be SELECT.",
         "severity": 0.35,
         "fix": "SELECT * FROM users WHERE id = 1;",
-        "keywords": ["selct", "select", "misspelled keyword", "syntax"]
+        "keywords": [
+          "selct", "select", "misspelled", "keyword", "syntax", "typo",
+          "spelling", "incorrect keyword", "wrong keyword", "misspelling",
+          "invalid keyword", "selct typo"
+        ]
       },
       {
         "id": "easy_001_from",
@@ -26,7 +30,10 @@
         "description": "FORM should be FROM.",
         "severity": 0.35,
         "fix": "SELECT * FROM users WHERE id = 1;",
-        "keywords": ["form", "from", "misspelled keyword", "syntax"]
+        "keywords": [
+          "form", "from", "misspelled", "keyword", "syntax", "typo",
+          "spelling", "table reference", "from clause", "misspelling"
+        ]
       },
       {
         "id": "easy_001_where",
@@ -34,7 +41,10 @@
         "description": "WEHRE should be WHERE.",
         "severity": 0.25,
         "fix": "SELECT * FROM users WHERE id = 1;",
-        "keywords": ["wehre", "where", "misspelled keyword", "syntax"]
+        "keywords": [
+          "wehre", "where", "misspelled", "keyword", "syntax", "typo",
+          "filter", "condition", "where clause", "misspelling"
+        ]
       },
       {
         "id": "easy_001_projection",
@@ -42,7 +52,11 @@
         "description": "SELECT * fetches unnecessary columns for a profile lookup.",
         "severity": 0.15,
         "fix": "SELECT id, name, email FROM users WHERE id = 1;",
-        "keywords": ["select *", "unnecessary columns", "projection", "performance"]
+        "keywords": [
+          "select *", "star", "unnecessary columns", "projection", "performance",
+          "all columns", "wildcard", "specific columns", "column selection",
+          "over-fetching", "fetch all", "select star"
+        ]
       }
     ],
     "max_steps": 5
@@ -66,7 +80,11 @@
         "description": "The query is missing the FROM clause before users.",
         "severity": 0.6,
         "fix": "SELECT id, email FROM users WHERE active = 1;",
-        "keywords": ["missing from", "from clause", "syntax", "users"]
+        "keywords": [
+          "missing from", "from clause", "syntax", "users", "no from",
+          "omitted from", "table reference", "absent from", "from keyword",
+          "missing keyword"
+        ]
       }
     ],
     "max_steps": 4
@@ -90,7 +108,11 @@
         "description": "NULL must be compared with IS NULL instead of = NULL.",
         "severity": 0.7,
         "fix": "SELECT order_id, total FROM orders WHERE shipped_at IS NULL;",
-        "keywords": ["is null", "= null", "null comparison", "logic"]
+        "keywords": [
+          "is null", "= null", "null comparison", "logic", "null check",
+          "equals null", "compare null", "null equality", "null predicate",
+          "three-valued logic", "null handling"
+        ]
       }
     ],
     "max_steps": 4
@@ -114,7 +136,11 @@
         "description": "The string literal is not terminated with a closing quote.",
         "severity": 0.75,
         "fix": "SELECT name FROM customers WHERE city = 'Boston';",
-        "keywords": ["unclosed quote", "unterminated string", "syntax", "quote"]
+        "keywords": [
+          "unclosed quote", "unterminated string", "syntax", "quote",
+          "missing quote", "string literal", "closing quote", "open quote",
+          "single quote", "unmatched quote", "parse error"
+        ]
       }
     ],
     "max_steps": 4
@@ -139,10 +165,69 @@
         "description": "Column statuz does not exist; the intended column is status.",
         "severity": 0.65,
         "fix": "SELECT id, status FROM orders WHERE status = 'paid';",
-        "keywords": ["unknown column", "statuz", "status", "column name"]
+        "keywords": [
+          "unknown column", "statuz", "status", "column name", "typo",
+          "misspelled column", "invalid column", "column not found",
+          "does not exist", "wrong column", "nonexistent column"
+        ]
+      }
+    ],
+    "max_steps": 4
+  },
+  {
+    "task_id": "easy_006",
+    "difficulty": "easy",
+    "query": "DELETE FROM orders;",
+    "schema": {
+      "orders": {
+        "id": "INT PRIMARY KEY",
+        "user_id": "INT",
+        "total": "DECIMAL(10,2)",
+        "status": "VARCHAR(32)"
+      }
+    },
+    "context": "Remove cancelled orders from the database.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_006_no_where",
+        "category": "logic",
+        "description": "DELETE without WHERE clause will remove ALL rows from the table.",
+        "severity": 1.0,
+        "fix": "DELETE FROM orders WHERE status = 'cancelled';",
+        "keywords": [
+          "delete", "no where", "missing where", "all rows", "dangerous",
+          "destructive", "entire table", "unfiltered delete", "data loss",
+          "without condition", "unconditional"
+        ]
+      }
+    ],
+    "max_steps": 4
+  },
+  {
+    "task_id": "easy_007",
+    "difficulty": "easy",
+    "query": "SELECT id FROM users WHERE email = email;",
+    "schema": {
+      "users": {
+        "id": "INT PRIMARY KEY",
+        "email": "VARCHAR(255)"
+      }
+    },
+    "context": "Find user by email for login lookup.",
+    "ground_truth_issues": [
+      {
+        "id": "easy_007_self_compare",
+        "category": "logic",
+        "description": "Comparing column to itself (email = email) is always true. Should compare to a string literal.",
+        "severity": 0.8,
+        "fix": "SELECT id FROM users WHERE email = 'user@example.com';",
+        "keywords": [
+          "self comparison", "column compared to itself", "always true",
+          "tautology", "email = email", "missing literal", "missing value",
+          "string literal", "parameter", "no filter"
+        ]
       }
     ],
     "max_steps": 4
   }
 ]
-

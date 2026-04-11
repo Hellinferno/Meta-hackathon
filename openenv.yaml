@@ -1,7 +1,7 @@
 name: sql-query-reviewer
 description: "AI agent reviews SQL queries for correctness, performance, and security."
 author: Hellinferno
-version: "0.1.0"
+version: "0.2.0"
 tags:
   - openenv
   - sql
@@ -28,30 +28,46 @@ tasks:
     name: Unknown Column Name
     difficulty: easy
     description: "Detect column name typo (statuz vs status)."
+  - id: easy_006
+    name: DELETE Without WHERE
+    difficulty: easy
+    description: "Detect dangerous unconditional DELETE statement."
+  - id: easy_007
+    name: Column Self-Comparison
+    difficulty: easy
+    description: "Detect column compared to itself instead of a value."
   - id: medium_001
-    name: Performance Anti-Pattern Review
+    name: Wide Table SELECT Star
     difficulty: medium
-    description: "Identify schema-aware performance problems like SELECT *, missing indexes, correlated subqueries."
+    description: "Identify schema-aware performance problems like SELECT * on wide JSON tables."
   - id: medium_002
-    name: Unbounded Query Detection
+    name: Correlated Subquery
     difficulty: medium
-    description: "Find queries missing LIMIT on large tables."
+    description: "Find correlated subqueries that could be rewritten as JOINs."
   - id: medium_003
-    name: Redundant Operations
+    name: Redundant DISTINCT
     difficulty: medium
     description: "Detect unnecessary DISTINCT on unique columns."
   - id: medium_004
-    name: Correlated Subquery Optimization
+    name: Function on Indexed Column
     difficulty: medium
-    description: "Find correlated subqueries that could be JOINs."
+    description: "Detect DATE() function preventing index usage."
   - id: medium_005
-    name: Join Performance Issues
+    name: Leading Wildcard Search
     difficulty: medium
-    description: "Identify missing index hints and inefficient joins."
+    description: "Identify LOWER() and leading wildcard preventing index usage."
+  - id: medium_006
+    name: DATE Function Index Bypass
+    difficulty: medium
+    description: "Detect DATE() function on indexed column preventing efficient lookups."
+  - id: medium_007
+    name: ORDER BY RAND Performance
+    difficulty: medium
+    description: "Detect expensive random ordering on large tables."
   - id: hard_001
     name: SQL Injection Detection
     difficulty: hard
-    description: "Find string concatenation enabling SQL injection vectors."
+    description: "Find string interpolation enabling SQL injection vectors."
   - id: hard_002
     name: Privilege Escalation via UNION
     difficulty: hard
@@ -67,4 +83,8 @@ tasks:
   - id: hard_005
     name: Transaction Isolation Issues
     difficulty: hard
-    description: "Find missing transaction isolation causing phantom reads."
+    description: "Find missing transaction isolation causing partial failure corruption."
+  - id: hard_006
+    name: Race Condition in Balance Update
+    difficulty: hard
+    description: "Detect TOCTOU race condition allowing double-spending."

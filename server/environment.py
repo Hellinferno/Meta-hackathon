@@ -73,7 +73,7 @@ class SQLReviewEnvironment:
                             description=matched_issue.description,
                         )
                     )
-                    reward = compute_reward(action, matched_issue, fix_valid=fix_valid)
+                    reward = compute_reward(action, matched_issue, fix_valid=fix_valid, issues_found_count=len(state.issues_identified), schema_available=bool(task.schema_info))
                     remaining = len(task.ground_truth_issues) - len(state.issues_identified)
                     feedback = f"Matched {matched_issue.category} issue '{matched_issue.id}'. {remaining} issue(s) remaining."
                     info = {
@@ -114,6 +114,7 @@ class SQLReviewEnvironment:
 
         else:
             feedback = self._schema_feedback(task)
+            reward = compute_reward(action, None, schema_available=bool(task.schema_info))
             info = {"context_shared": bool(task.schema_info)}
 
         state.total_reward += reward

@@ -46,22 +46,23 @@ def test_identify_issue_no_match_returns_penalty() -> None:
 
 def test_identify_issue_match_no_fix_zero_confidence() -> None:
     # base_reward = min(0.35, 0.35) = 0.35; fix_bonus = 0; confidence_bonus = 0
-    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(0.35)) == pytest.approx(0.35)
+    # order_bonus = 0.04 * (1/(0+1)) = 0.04 → total = 0.39
+    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(0.35)) == pytest.approx(0.39)
 
 
 def test_identify_issue_match_no_fix_full_confidence() -> None:
-    # base=0.35 + confidence_bonus=min(0.05, 1.0*0.05)=0.05 → 0.40, capped at 0.4
-    assert compute_reward(_action("identify_issue", confidence=1.0), _issue(0.35)) == pytest.approx(0.4)
+    # base=0.35 + confidence_bonus=min(0.05, 1.0*0.35*0.08)=0.028 + order_bonus=0.04 → 0.418
+    assert compute_reward(_action("identify_issue", confidence=1.0), _issue(0.35)) == pytest.approx(0.418)
 
 
 def test_identify_issue_match_with_fix_zero_confidence() -> None:
-    # base=0.35 + fix_bonus=0.08 → 0.43, capped at 0.4
-    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(0.35), fix_valid=True) == pytest.approx(0.4)
+    # base=0.35 + fix_bonus=0.08 + order_bonus=0.04 = 0.47, capped at 0.45
+    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(0.35), fix_valid=True) == pytest.approx(0.45)
 
 
 def test_identify_issue_high_severity_capped_at_035_base() -> None:
-    # min(0.9, 0.35) = 0.35
-    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(severity=0.9)) == pytest.approx(0.35)
+    # min(0.9, 0.35) = 0.35 + order_bonus=0.04 = 0.39
+    assert compute_reward(_action("identify_issue", confidence=0.0), _issue(severity=0.9)) == pytest.approx(0.39)
 
 
 # ── suggest_fix ───────────────────────────────────────────────────────────────
@@ -96,4 +97,10 @@ def test_approve_many_issues_missed_floors_at_negative_one() -> None:
 # ── request_more_context ──────────────────────────────────────────────────────
 
 def test_request_more_context_returns_zero() -> None:
+    # No schema_available → returns 0.0
     assert compute_reward(_action("request_more_context"), None) == pytest.approx(0.0)
+
+
+def test_request_more_context_with_schema_returns_penalty() -> None:
+    # schema_available=True → returns -0.03
+    assert compute_reward(_action("request_more_context"), None, schema_available=True) == pytest.approx(-0.03)

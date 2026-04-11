@@ -311,16 +311,26 @@ async def async_main() -> int:
     # Build LLM client (even without key, don't crash — emit logs and exit)
     if not API_KEY:
         print("[DEBUG] WARNING: No API key found (HF_TOKEN / API_KEY / OPENAI_API_KEY)", flush=True)
-        for tid in ["easy_001", "medium_001", "hard_001"]:
+        _fallback_ids = [
+            "easy_001", "easy_002", "easy_003", "easy_004", "easy_005", "easy_006", "easy_007",
+            "medium_001", "medium_002", "medium_003", "medium_004", "medium_005", "medium_006", "medium_007",
+            "hard_001", "hard_002", "hard_003", "hard_004", "hard_005", "hard_006",
+        ]
+        for tid in _fallback_ids:
             log_start(task=tid, env=BENCHMARK, model=MODEL_NAME)
             log_end(success=False, steps=0, score=0.01, rewards=[])
         return 1
 
     llm_client = OpenAI(api_key=API_KEY, base_url=API_BASE_URL)
 
+    _default_ids = ",".join([
+        "easy_001", "easy_002", "easy_003", "easy_004", "easy_005", "easy_006", "easy_007",
+        "medium_001", "medium_002", "medium_003", "medium_004", "medium_005", "medium_006", "medium_007",
+        "hard_001", "hard_002", "hard_003", "hard_004", "hard_005", "hard_006",
+    ])
     task_ids = tuple(
         tid.strip()
-        for tid in os.getenv("TASK_IDS", "easy_001,medium_001,hard_001").split(",")
+        for tid in os.getenv("TASK_IDS", _default_ids).split(",")
         if tid.strip()
     )
 

@@ -21,7 +21,11 @@
         "description": "SELECT * pulls a wide payload when the dashboard only needs a few columns.",
         "severity": 0.3,
         "fix": "SELECT id, event_name, created_at FROM events ORDER BY created_at DESC LIMIT 50;",
-        "keywords": ["select *", "wide table", "projection", "performance"]
+        "keywords": [
+          "select *", "wide table", "projection", "performance", "star",
+          "all columns", "unnecessary columns", "column selection",
+          "over-fetching", "wildcard"
+        ]
       },
       {
         "id": "medium_001_missing_limit",
@@ -29,7 +33,11 @@
         "description": "The dashboard query is missing a LIMIT and can scan far more rows than necessary.",
         "severity": 0.3,
         "fix": "SELECT id, event_name, created_at FROM events ORDER BY created_at DESC LIMIT 50;",
-        "keywords": ["limit", "unbounded query", "dashboard", "performance"]
+        "keywords": [
+          "limit", "unbounded query", "dashboard", "performance", "no limit",
+          "missing limit", "unlimited rows", "pagination", "all rows",
+          "full scan", "row count"
+        ]
       }
     ],
     "max_steps": 5
@@ -57,7 +65,11 @@
         "description": "The correlated subquery re-counts orders per row and should be rewritten as a join with GROUP BY.",
         "severity": 0.6,
         "fix": "SELECT c.id, c.name, COUNT(o.id) AS order_count FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id, c.name;",
-        "keywords": ["correlated subquery", "group by", "join", "count", "performance"]
+        "keywords": [
+          "correlated subquery", "group by", "join", "count", "performance",
+          "subquery per row", "n+1", "rewrite", "left join", "aggregate",
+          "scalar subquery", "dependent subquery"
+        ]
       }
     ],
     "max_steps": 6
@@ -81,7 +93,11 @@
         "description": "DISTINCT is redundant because users.email is already unique.",
         "severity": 0.45,
         "fix": "SELECT email FROM users WHERE email IS NOT NULL;",
-        "keywords": ["distinct", "unique", "redundant", "email", "performance"]
+        "keywords": [
+          "distinct", "unique", "redundant", "email", "performance",
+          "unnecessary distinct", "unique constraint", "already unique",
+          "duplicate elimination", "deduplication", "wasted sort"
+        ]
       }
     ],
     "max_steps": 5
@@ -110,7 +126,11 @@
         "description": "Wrapping created_at with DATE() prevents efficient use of the created_at index.",
         "severity": 0.6,
         "fix": "SELECT o.id, o.total, u.name FROM orders o JOIN users u ON u.id = o.user_id WHERE o.created_at >= '2026-04-10' AND o.created_at < '2026-04-11';",
-        "keywords": ["date()", "function on column", "index", "range predicate", "performance"]
+        "keywords": [
+          "date()", "function on column", "index", "range predicate", "performance",
+          "sargable", "non-sargable", "prevents index", "full scan",
+          "index usage", "function wrapping"
+        ]
       }
     ],
     "max_steps": 6
@@ -135,7 +155,11 @@
         "description": "Applying LOWER(name) on every row prevents the index on name from being used efficiently.",
         "severity": 0.35,
         "fix": "SELECT id, name FROM products WHERE name ILIKE 'pro%';",
-        "keywords": ["lower", "function on column", "index", "performance"]
+        "keywords": [
+          "lower", "function on column", "index", "performance", "sargable",
+          "non-sargable", "case insensitive", "full scan", "table scan",
+          "function wrapping column"
+        ]
       },
       {
         "id": "medium_005_leading_wildcard",
@@ -143,10 +167,82 @@
         "description": "The leading wildcard in LIKE '%pro%' forces a full scan instead of an index-friendly prefix lookup.",
         "severity": 0.35,
         "fix": "SELECT id, name FROM products WHERE name ILIKE 'pro%';",
-        "keywords": ["leading wildcard", "%pro%", "full scan", "prefix lookup", "performance"]
+        "keywords": [
+          "leading wildcard", "%pro%", "full scan", "prefix lookup", "performance",
+          "like wildcard", "pattern matching", "index unusable", "table scan",
+          "wildcard prefix"
+        ]
       }
     ],
     "max_steps": 6
+  },
+  {
+    "task_id": "medium_006",
+    "difficulty": "medium",
+    "query": "SELECT * FROM events WHERE DATE(created_at) = '2024-01-15';",
+    "schema": {
+      "events": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)",
+        "created_at": "TIMESTAMP",
+        "INDEX": "idx_created_at ON events(created_at)"
+      }
+    },
+    "context": "Find all events that happened on a specific date.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_006_function_on_index",
+        "category": "performance",
+        "description": "Using DATE() function on an indexed column prevents index usage. Use a range comparison instead.",
+        "severity": 0.7,
+        "fix": "SELECT * FROM events WHERE created_at >= '2024-01-15 00:00:00' AND created_at < '2024-01-16 00:00:00';",
+        "keywords": [
+          "function on column", "date function", "index", "sargable",
+          "non-sargable", "prevents index", "range comparison", "full scan",
+          "table scan", "index usage", "function wrapping column"
+        ]
+      },
+      {
+        "id": "medium_006_star",
+        "category": "performance",
+        "description": "SELECT * returns all columns when only specific fields may be needed.",
+        "severity": 0.2,
+        "fix": "SELECT id, name, created_at FROM events WHERE created_at >= '2024-01-15' AND created_at < '2024-01-16';",
+        "keywords": [
+          "select *", "star", "all columns", "projection", "unnecessary columns",
+          "wildcard", "over-fetching", "column selection"
+        ]
+      }
+    ],
+    "max_steps": 6
+  },
+  {
+    "task_id": "medium_007",
+    "difficulty": "medium",
+    "query": "SELECT * FROM products ORDER BY RAND() LIMIT 10;",
+    "schema": {
+      "products": {
+        "id": "INT PRIMARY KEY",
+        "name": "VARCHAR(255)",
+        "price": "DECIMAL(10,2)",
+        "category": "VARCHAR(64)"
+      }
+    },
+    "context": "Show 10 random products on the homepage.",
+    "ground_truth_issues": [
+      {
+        "id": "medium_007_order_rand",
+        "category": "performance",
+        "description": "ORDER BY RAND() generates a random value for every row in the table, causing a full table scan and sort. Extremely slow on large tables.",
+        "severity": 0.8,
+        "fix": "SELECT * FROM products WHERE id >= (SELECT FLOOR(RAND() * (SELECT MAX(id) FROM products))) LIMIT 10;",
+        "keywords": [
+          "order by rand", "random", "full table scan", "sort", "performance",
+          "slow", "every row", "random ordering", "rand function",
+          "expensive sort", "large table"
+        ]
+      }
+    ],
+    "max_steps": 5
   }
 ]
-

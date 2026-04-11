@@ -25,14 +25,37 @@ def _set_overlap(candidate: set[str], target: set[str]) -> float:
     return len(candidate & target) / max(len(target), 1)
 
 
-def score_issue_match(description: str, category: IssueCategory | None, issue: GroundTruthIssue) -> float:
+def _make_bigrams(text: str) -> set[tuple[str, str]]:
+    words = TOKEN_RE.findall(text.lower())
+    return {(words[i], words[i + 1]) for i in range(len(words) - 1)}
+
+
+def score_issue_match(
+    description: str, category: IssueCategory | None, issue: GroundTruthIssue
+) -> float:
     candidate_tokens = tokenize(description)
     keyword_tokens = set(issue.keywords)
     description_tokens = tokenize(issue.description)
+
+    # Unigram overlap
     keyword_score = _set_overlap(candidate_tokens, keyword_tokens)
     description_score = _set_overlap(candidate_tokens, description_tokens)
+
+    # Bigram overlap — catches two-word phrases like "sql injection", "missing where"
+    candidate_bigrams = _make_bigrams(description)
+    keyword_bigrams: set[tuple[str, str]] = set()
+    for kw in issue.keywords:
+        words = kw.lower().split()
+        if len(words) >= 2:
+            keyword_bigrams.add(tuple(words[:2]))
+    bigram_score = 0.0
+    if keyword_bigrams:
+        bigram_hits = len(candidate_bigrams & keyword_bigrams)
+        bigram_score = bigram_hits / max(len(keyword_bigrams), 1)
+
     category_bonus = 0.2 if category == issue.category else 0.0
-    score = (keyword_score * 0.6) + (description_score * 0.25) + category_bonus
+
+    score = (keyword_score * 0.5) + (description_score * 0.15) + (bigram_score * 0.15) + category_bonus
     return clamp(score, 0.0, 1.0)
 
 
@@ -88,4 +111,3 @@ def grade_episode(
     false_positive_penalty = 0.05 * false_positive_count
     final_score = coverage_score + efficiency_bonus - false_positive_penalty
     return clamp(final_score, 0.01, 0.99)
-
